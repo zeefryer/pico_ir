@@ -15,11 +15,6 @@ class IRReceive():
     t = ticks_us()  # gets the timer value
     v = pin.value()  # get the pin value so we can evaluate if it's rising or falling
     if self.edge <= self.num_edges:
-      if not self.edge:
-        # start a timer so it can time out and trigger decode/cleanup
-        # timer period: how long until it expires and calls the callback function
-        # TODO: calibrate the timer period better or find a better way to run the decode/cleanup
-        self.tim.init(period = self.num_edges * 10, mode=Timer.ONE_SHOT, callback=self.cleanup)
       if v < self.value:
         self.times[self.edge] = ('l', t)  # now low
       elif v > self.value:
@@ -30,11 +25,15 @@ class IRReceive():
       self.edge += 1
 
   def start(self, num_edges=250):
-    print(f'Recording IR pulses in the background for the next {num_edges/100:.3g} seconds.\nStarting...')
+    print(f'IR Receiver: Recording IR pulses in the background for the next {num_edges/100:.3g} seconds.\nStarting...')
     self.edge = 0  # reset to zero
     self.num_edges = num_edges
     # create the array ahead of time for speed
     self.times = [None for i in range(self.num_edges+1)]
+    # start a timer so it can time out and trigger decode/cleanup
+    # timer period: how long until it expires and calls the callback function
+    # TODO: calibrate the timer period better or find a better way to run the decode/cleanup
+    self.tim.init(period = self.num_edges * 10, mode=Timer.ONE_SHOT, callback=self.cleanup)
     # now set up the interrupt on the pin, which calls the handler fn when triggered
     self.pin.irq(handler=self.pin_cb, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)  
 
@@ -47,7 +46,7 @@ class IRReceive():
 
     # now decode the ticks as appropriate
     decoded = self.decode()
-    print('Finished!')
+    print('IR Receiver: finished recording!')
     if self.verbose:
       self.pretty_print_decoded()
     return None
@@ -57,8 +56,8 @@ class IRReceive():
     return self.ir_periods
 
   def get_diffs(self):
-    t = self.times  # short name for convenience 
-    return [(t[i][0], ticks_diff(t[i+1][1], t[i][1])) for i in range(self.num_edges)]
+    t = [x for x in self.times if x is not None] 
+    return [(t[i][0], ticks_diff(t[i+1][1], t[i][1])) for i in range(len(t)-1)]
 
   def pretty_print_decoded(self):
     print('Pulse type (high or low) and duration in microseconds')
@@ -67,8 +66,8 @@ class IRReceive():
 
 
 class IRReceiveRoomba(IRReceive):
-  def __init__(self, pin):
-    super().__init__(pin)
+  def __init__(self, pin, **kwargs):
+    super().__init__(pin, **kwargs)
     self.decode_dict = {(1,3): '0', (3,1): '1'}
 
   def decode(self):
