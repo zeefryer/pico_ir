@@ -3,6 +3,7 @@
 # Released under the MIT License (MIT). See LICENSE.
 
 # Copyright (c) 2021 Peter Hinch
+# See https://github.com/peterhinch/micropython_ir
 
 from machine import Pin, PWM
 import rp2
