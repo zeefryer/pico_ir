@@ -1,10 +1,15 @@
+"""IR decoder for the Raspberry Pi Pico.
+
+Author: Zee Fryer, 2022.
+Based on the micropython_ir library by Peter Hinch.
+"""
+
 from machine import Timer, Pin
 from utime import ticks_us, ticks_diff
 
 
 class IRReceive():
-  """
-  Receive and decode IR pulses in a non-blocking manner.
+  """Receive and decode IR pulses in a non-blocking manner.
 
   Args:
     pin: A machine.Pin instance corresponding to the IR receiver.
@@ -17,8 +22,7 @@ class IRReceive():
     self.verbose = verbose
 
   def start(self, num_edges=250):
-    """
-    Start the IR receiver in the background.
+    """Start the IR receiver in the background.
 
     Records the specified number of on/off pulses and automatically decodes and
     returns results.
@@ -43,8 +47,7 @@ class IRReceive():
     self.pin.irq(handler=self._pin_cb, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)
 
   def _pin_cb(self, pin):
-    """
-    Callback/irq interrupt to allow for non-blocking recording of pulses.
+    """Callback/irq interrupt to allow for non-blocking recording of pulses.
 
     Args:
       pin: The pin instance that triggered the callback.
@@ -55,8 +58,7 @@ class IRReceive():
       self.edge += 1
 
   def _cleanup(self, calling_obj):
-    """
-    Called by timer when it expires.
+    """Called by timer when it expires.
 
     Args:
       calling_obj: The object that triggered the callback.
@@ -72,8 +74,7 @@ class IRReceive():
     return None
 
   def _decode(self):
-    """
-    Decodes the collected pulse length data.
+    """Decode the collected pulse length data.
 
     Override this in subclasses to reflect specific IR protocols.
 
@@ -88,8 +89,7 @@ class IRReceive():
     return [ticks_diff(t[i+1], t[i]) for i in range(len(t)-1)]
 
   def _pretty_print_decoded(self):
-    """
-    Control what is printed when verbose=True.
+    """Control what is printed when verbose=True.
     """
     print('Pulse duration in microseconds')
     for i, x in enumerate(self.ir_periods):
@@ -97,8 +97,7 @@ class IRReceive():
 
 
 class IRReceiveRoomba(IRReceive):
-  """
-  Receive and decode IR pulses from Roomba 500/600 series roombas, docks, etc.
+  """Receive and decode IR pulses from Roomba 500/600 series roombas, docks, etc
 
   Roomba uses a custom encoding: 3ms on/1ms off for 1, 1ms on/3ms off for 0.
 
@@ -123,8 +122,7 @@ class IRReceiveRoomba(IRReceive):
     print('\n'.join(str(i) for i in self.decoded))
 
   def _separate_bursts(self, ir_periods):
-    """
-    Process IR pulse lengths to prepare them for decoding.
+    """Process IR pulse lengths to prepare them for decoding.
 
     Groups pulse lengths into probable bursts by treating any pulse of length
     >= 4 milliseconds as a divider, correcting the final pulse length in each

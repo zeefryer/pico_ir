@@ -1,23 +1,31 @@
+"""IR transmitter for the Raspberry Pi Pico.
+
+Designed for subclassing in order to implement individual IR protocols, e.g.
+IRTransmitRoomba which can transmit control codes to 500/600 series Roombas.
+
+Author: Zee Fryer, 2022.
+Based on the micropython_ir library by Peter Hinch.
+
+"""
+
 from .rp2_rmt import RP2_RMT 
 from array import array
 
 
 class IRTransmit():
-  """
-  Transmit IR pulses using Raspberry Pi Pico.
+  """Transmit IR pulses using Raspberry Pi Pico.
+
+  Args:
+    pin: A machine.Pin instance controlling the IR LED.
+    carrier_freq: The frequency to transmit at (e.g. 38000).
+    pwm_duty: PWM duty cycle, int 0-100.
+
   """
   def __init__(self, pin, carrier_freq, pwm_duty):
-    """
-    Args:
-      pin: A machine.Pin instance controlling the IR LED.
-      carrier_freq: The frequency to transmit at (e.g. 38000).
-      pwm_duty: PWM duty cycle, int 0-100.
-    """
     self.rmt = RP2_RMT(pin_pulse=None, carrier=(pin, carrier_freq, pwm_duty))
 
   def transmit(self, data, reps=1):
-    """
-    Transmit a code on the specified pin.
+    """Transmit a code on the specified pin.
 
     Args:
       data: Int, the value to be transmitted.
@@ -28,8 +36,7 @@ class IRTransmit():
     self._trigger(reps) 
 
   def _create_tx(self, data):
-    """
-    Prepare data for transmission.
+    """Prepare data for transmission.
 
     This should be overridden in subclasses to reflect individual IR protocols.
     Method must create self.pulse_lengths, an array of pulse lengths in 
@@ -42,27 +49,27 @@ class IRTransmit():
     self.rmt.send(self.pulse_lengths, reps=reps, check=False)
 
   def _append(self, *times): 
-    """
-    Append values to pulse_lengths and automatically increment position counter.
+    """Append values to pulse_lengths and increment position counter.
+
+    Args:
+      times: One or more comma-separated integers representing mark/space
+        durations in microseconds.
     """
     for t in times:
       self.pulse_lengths[self.idx] = t
       self.idx += 1
 
   def _add(self, t):
-    """
-    Extend most recent pulse in array by specified duration (in microseconds).
+    """Extend most recent pulse in array by given duration (in microseconds).
     """
     self.pulse_lengths[self.idx-1] += t
 
 
 class IRTransmitRoomba(IRTransmit):
-  """
-  Transmit IR codes to Roomba 500/600 series.
+  """Transmit IR codes to Roomba 500/600 series.
 
   Roomba uses a custom encoding: 3ms on/1ms off for 1, 1ms on/3ms off for 0. Gap
-  between transmission bursts doesn't seem to matter, values recorded from dock
-  vary from 4 to 90ms.
+  between transmission bursts doesn't seem to matter, we use 40ms here.
   """
   def __init__(self, pin, carrier_freq=None, pwm_duty=None):
     """
