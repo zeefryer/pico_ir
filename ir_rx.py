@@ -30,10 +30,8 @@ class IRReceive():
     Args:
       num_edges: How many pulses to log.
     """
-    print(
-        f'IR Receiver: Recording IR pulses in the background, will time out in'
-        '{num_edges/100:.3g} seconds.'
-    )
+    print(f'IR Receiver: Recording IR pulses in the background, will time' + \
+          f'out in {num_edges/100:.3g} seconds.')
     self.edge = 0  # reset counter to zero
     self.num_edges = num_edges
 
@@ -41,7 +39,7 @@ class IRReceive():
 
     # Start a timer that triggers decoding/cleanup on timeout.
     self.tim.init(
-        period=self.num_edges * 10, mode=Timer.ONE_SHOT, callback=self.cleanup)
+        period=self.num_edges * 10, mode=Timer.ONE_SHOT, callback=self._cleanup)
 
     # Calls _pin_cb every time the pin detects a rising or falling edge.
     self.pin.irq(handler=self._pin_cb, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)
@@ -81,7 +79,7 @@ class IRReceive():
     Returns:
       List of pulse durations.
     """
-    self.ir_periods = self.get_diffs()
+    self.ir_periods = self._get_diffs()
     return self.ir_periods
 
   def _get_diffs(self):
@@ -97,7 +95,7 @@ class IRReceive():
 
 
 class IRReceiveRoomba(IRReceive):
-  """Receive and decode IR pulses from Roomba 500/600 series roombas, docks, etc
+  """Receive and decode IR pulses from 500/600 series Roombas, docks, etc.
 
   Roomba uses a custom encoding: 3ms on/1ms off for 1, 1ms on/3ms off for 0.
 
